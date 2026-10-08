@@ -1,6 +1,31 @@
 # Fountain
 
-A multi-tenant API and UI for managing agents, repos, secrets, and conversations. It's for people who want to create sandboxed coding agent instances with preconfigured sets of env vars, MCP servers, skills, repos, and packages. Users treat Fountain as a building block for their own workflows, but also use the UI to get started and to debug. It exists because running Claude instances with worktrees locally — and shuffling MCP configurations and skill setups by hand — is painful.
+Fountain is a conversational API to a computer. You send a prompt to an HTTP
+endpoint. Fountain wakes a machine with your repos cloned, your packages
+installed and your credentials in the environment, then runs a coding agent on
+it: Claude Code, Codex, Gemini CLI or opencode. The answer comes back. On the
+hosted service the meter runs only while a turn runs. An idle machine parks
+with its disk kept, so the next prompt lands on the same files.
+
+```ts
+const fountain = new Fountain();
+const run = await fountain.run("Upgrade us to Phoenix 1.8 and open a PR", {
+  agent: "reposage",     // a runtime, a model, skills and MCP servers, written once
+  vault: "github-bot",   // the token lands in the sandbox, never in the prompt
+});
+await fountain.resume(run.conversationId).send("Also bump the Ecto dependency");
+```
+
+The runtime is a field on the agent, so the call above does not change when you
+swap one for another. [A walkthrough of one request](https://fountain-explainer-8e97ee.moor.inevitable.fyi/)
+(source in [`explainer/`](explainer/)) shows the machine wake, the meter run and
+stop, and where a secret goes.
+
+Fountain is a multi-tenant API and UI for managing agents, repos, secrets and
+conversations. It exists because running Claude instances with worktrees
+locally, and shuffling MCP configurations and skill setups by hand, is painful.
+The web UI is an operator console for setting things up and debugging. Your own
+code, the CLI and the apps below all use the same API.
 
 ## In one picture
 
@@ -27,6 +52,7 @@ no operators assumed — lives in [`deploy/k8s/`](deploy/k8s/).
 
 ## The apps
 
+These three are clients of the API above, not separate products.
 Fountain's own UI is an operator console. You configure things in it; you do
 not watch an agent work in it. The three apps we build for that are separate
 single-page apps on their own origins, talking to `/api` with a key you paste
@@ -67,7 +93,8 @@ npm install @agentshit/fountain-sdk
 ```ts
 import { Fountain } from "@agentshit/fountain-sdk";
 
-const run = await new Fountain().run("Upgrade us to Phoenix 1.8 and open a PR", {
+const fountain = new Fountain();
+const run = await fountain.run("Upgrade us to Phoenix 1.8 and open a PR", {
   agent: "reposage",
   vault: "github-bot",   // the token lands in the sandbox, never in the prompt
 });
